@@ -1,0 +1,39 @@
+line-length = 88
+indent-width = 4
+
+[lint]
+
+select = [
+  "E",     # error
+  "F",     # pyflakes
+  "I",     # isort
+  "W",     # warning
+  "N",     # pep8-naming
+  "B",     # flake8-bugbear
+  "UP",    # pyupgrade
+  "ERA",   # eradicate
+  "YTT",   # flake8-2020
+  "ASYNC", # flake8-async
+  "C4",    # flake8-comprehensions
+  "T10",   # flake8-debugger
+  "G",     # flake8-logging-format
+  "PIE",   # flake8-pie
+  "PYI",   # flake8-pyi
+  "PT",    # flake8-pytest-style
+  "Q",     # flake8-quotes
+  "SIM",   # flake8-simplify
+  "TCH",   # flake8-type-checking
+  "PTH",   # flake8-use-pathlib
+  "PGH",   # pygrep-hooks
+  "PERF",  # perflint
+  "RUF",   # ruff-specific rules
+]
+ignore = [
+  "C408",   # unnecessary-collection-call
+  "PT015",  # pytest-assert-always-false
+  "SIM118", # in-dict-keys
+  "PTH109", # os-getcwd
+  "PTH123", # builtin-open
+  "RUF012", # mutable-class-default
+]
+fixable = ["E", "F", "I"]
