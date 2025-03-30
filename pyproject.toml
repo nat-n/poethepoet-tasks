@@ -2,7 +2,11 @@
 name = "poethepoet-tasks"
 version = "0.1.0"
 description = "A tasks package with common project tasks for Poe the Poet."
+authors = [{ name = "Nat Noordanus", email = "n@noordan.us" }]
 readme = "README.md"
+license = "MIT"
+keywords = ["automation", "tasks", "task-runner", "poetry", "poe", "poethepoet"]
+classifiers = ["Topic :: Software Development :: Build Tools"]
 requires-python = ">=3.9"
 dependencies = [
   "mypy>=1.15.0",
@@ -10,6 +14,10 @@ dependencies = [
   "pytest>=8.3.5",
   "ruff>=0.11.2",
 ]
+
+[project.urls]
+repository = "https://github.com/nat-n/poethepoet-tasks"
+homepage = "https://github.com/nat-n/poethepoet-tasks"
 
 [tool.poe]
 executor.type = "uv"
