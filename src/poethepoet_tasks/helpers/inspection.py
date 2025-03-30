@@ -1,9 +1,5 @@
 import sys
-from typing import (
-    Any,
-    Union,
-    get_origin,
-)
+from typing import Any, Union, get_origin
 
 arg_types = {
     int: "integer",

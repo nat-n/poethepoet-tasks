@@ -93,29 +93,38 @@ See the tasks package in this repo for a [real world example](https://github.com
 
 The TaskCollection object also provides a decorator to be applied directly to python functions to declare them as script tasks.
 
+For example you could create the following file as `tasks.py` in your project root, then enable it via `task_packages = "tasks:tasks()"`.
+
 ```python
 from poethepoet_tasks import TaskCollection
 
 tasks = TaskCollection()
 
-@tasks.script(task_args=True)
-def hello( # The function name will be taken as the task name by default
+@tasks.script(tags=["example"])
+def hello(
     foo: str | None = None,
-    *, # This means previous args will be positional, instead of CLI options
-    bar: int = 1, # this optional argument will be parsed to an integer
-    baz: bool = 1.0, # this optional argument will be a CLI flag
+    *, # This means preceding args will be positional, instead of CLI options
+    bar: int = 1,
+    baz: bool = True,
 ):
     """
-    The function docstring is picked up as the task help message!
+    The first paragraph of the function docstring is picked up as the task help message!
+
+    Args:
+        foo: a positional argument for specifying foo
+        bar: a number of things
+        baz: to baz or not to baz
     """
     pass
 ```
 
+By default args configuration will be inferred from the function signature, including argument types, whether they're positional, required, accept multiple values, and their default value if any. The docstring is parsed (according to either rst or google formats) to determine the help message to associate with each CLI argument.
+
 The `script` decorator registers a new script task in the TaskCollection. It accepts the following optional keyword arguments as configuration:
 
 - **task_name** `str`: The name of the task. if not set then the function name is used (in kebab-case).
-- **help** `str`: Documentation to display for this task. If not set then the function docstring is used.
-- **task_args** `bool`: Set to true to enable automatic configuration of task args from the function signature.
+- **help** `str`: Documentation to display for this task. If not set then the function docstring is used up until the first empty line.
+- **task_args** `bool`: Set to False to disable automatic configuration of task args from the function signature.
 - **options** `dict`: Any [other options](https://poethepoet.natn.io/tasks/task_types/script.html#available-task-options) to provide as config for the script task.
 - **tags** `Collection[str]`: A collection of tags to associate with this item in the task collection.
 

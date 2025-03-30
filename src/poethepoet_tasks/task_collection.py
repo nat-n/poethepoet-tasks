@@ -4,6 +4,7 @@ import inspect
 from functools import partial
 from typing import TYPE_CHECKING, Callable, get_args, get_origin, get_type_hints
 
+from .helpers.docstrings import parse_args_from_docstring
 from .helpers.inspection import arg_types as _arg_types
 from .helpers.inspection import is_union
 
@@ -135,12 +136,24 @@ class TaskCollection:
         *,
         task_name: str | None = None,
         help: str | None = None,
-        task_args: bool = False,
+        task_args: bool = True,
         options: dict | None = None,
         tags: Collection[str] = tuple(),
     ):
         """
         A decorator to generate a script task from the decorated function.
+
+        :param func: The function to decorate
+        :param task_name:
+            The name of the task. if not set then the function name is used
+            (transformed to kabab-case).
+        :param help:
+            Documentation to display for this task.
+            If not set then the function docstring is used.
+        :param task_args: If True, infer task args from the function signature.
+        :param options: Any other options to provide as config for the script task.
+        :param tags: Tags to associate with the task for the purpose of filtering
+        :return: The decorated function
         """
 
         if func is None:
@@ -156,11 +169,12 @@ class TaskCollection:
         task_config: dict = {
             **(options or {}),
             "script": f"{func.__module__}:{func.__name__}",
-            "help": help or (func.__doc__ or "").strip(),
+            "help": help or (func.__doc__ or "").strip().split("\n\n")[0],
         }
 
         if task_args:
             args: list[dict] = []
+            args_help = parse_args_from_docstring(func.__doc__ or "")
             params = inspect.signature(func).parameters
             type_annotations = get_type_hints(func)
             has_positional = any(
@@ -170,6 +184,8 @@ class TaskCollection:
             for param in params.values():
                 arg = {"name": param.name, "positional": False}
 
+                if param.name in args_help:
+                    arg["help"] = args_help[param.name]
                 if param.kind == param.POSITIONAL_ONLY:
                     arg["positional"] = True
                 elif param.kind == param.POSITIONAL_OR_KEYWORD:
