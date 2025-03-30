@@ -1,7 +1,7 @@
 Poe the Poet Tasks
 ==================
 
-_Task packages_ are a construct in Poe the Poet that allows tasks to be included from a python package. This library provides primitives to support defining poe tasks in python, as well as an opinionated collection of tasks ready for inclusion in your projects.
+[_Task packages_](https://poethepoet.natn.io/guides/packaged_tasks.html) are a construct in Poe the Poet that allows tasks to be included from a python package. This library provides primitives to support defining poe tasks in python, as well as an opinionated collection of tasks ready for inclusion in your projects.
 
 Compatiable with Poe the Poet version >= 0.34.0
 
@@ -13,7 +13,7 @@ This library defines an opinionated collection of tasks that you can add to your
 
 ```toml
 [tool.poe]
-task_packages = "poethepoet_tasks:tasks"
+include_script = "poethepoet_tasks:tasks"
 ```
 
 Note that available tasks may change from one release to the next so it is recommended to depend on a specific version so that the tasks in your project don't change unexpectedly.
@@ -25,13 +25,13 @@ By default all available tasks are loaded, but you can also optionally specify a
 For example, by default the *format* task applies both ruff and black formatters. However if you want to simplify things you can exclude all tasks tagged with 'black', and then you'll only get ruff based formatting and linting.
 
 ```toml
-task_packages = "poethepoet_tasks.tasks:tasks(exclude_tags=['black'])"
+include_script = "poethepoet_tasks.tasks:tasks(exclude_tags=['black'])"
 ```
 
 As another example you could include only the test task like so:
 
 ```toml
-task_packages = "poethepoet_tasks.tasks:tasks(exclude_tags=['test-task'])"
+include_script = "poethepoet_tasks.tasks:tasks(exclude_tags=['test-task'])"
 ```
 
 #### Configuring tasks
@@ -41,7 +41,7 @@ Tasks that use [ruff](https://docs.astral.sh/ruff/) come with an opinionated con
 ```toml
 [tool.poe]
 env = { RUFF_CONFIG = "path/to/ruff.toml" }
-task_packages = "poethepoet_tasks:tasks"
+include_script = "poethepoet_tasks:tasks"
 ```
 
 See the section below on Mixing task collections for an alternative approach of customizing tasks from a tasks package like this one.
@@ -66,7 +66,7 @@ tasks.add(
         "help": "Run project tests",
         "cmd": "pytest tests",
     },
-    tags=["pytest"], # tags are optional and allow consumers to select only the desired tasks
+    tags=["pytest"], # tags are optional and allow consumers to (de)select this task for inclusion
 )
 ```
 
@@ -74,10 +74,10 @@ Now we can load these tasks by including the following in our `pyproject.toml`:
 
 ```toml
 [tool.poe]
-task_packages = "tasks:tasks()"
+include_script = "tasks:tasks()"
 ```
 
-Here's we're loading tasks from a package within the same repo, but as with script tasks, any package within the environment used by poe can be a source of tasks.
+Here we're loading tasks from a package within the same repo, but as with script tasks, any package within the environment used by poe can be a source of tasks.
 
 A TaskCollection may define multiple versions of the same task, in which case the first one to match the specified tags is used.
 
@@ -87,13 +87,24 @@ See the tasks package in this repo for a [real world example](https://github.com
 
 ## Configuring environment variables for tasks
 
-...
+Poe the Poet's `include_script` option also supports including environment variables, which can be set directly on a TaskCollection in the constructor or properties.
+
+```python
+from poethepoet_tasks import TaskCollection
+
+tasks = TaskCollection(env={"HOST": "127.0.0.1", "PORT": "8000"}, envfile=[".env"])
+
+tasks.env["HOST"] = "example.com"
+tasks.envfile.append(".secrets")
+```
+
+See the [Poet the Poet docs](https://poethepoet.natn.io/global_options.html#global-environment-variables) for more details.
 
 ## Inline script tasks
 
 The TaskCollection object also provides a decorator to be applied directly to python functions to declare them as script tasks.
 
-For example you could create the following file as `tasks.py` in your project root, then enable it via `task_packages = "tasks:tasks()"`.
+For example you could create the following file as `tasks.py` in your project root, then enable it via `include_script = "tasks:tasks()"`.
 
 ```python
 from poethepoet_tasks import TaskCollection
@@ -151,7 +162,7 @@ tasks.add(
 )
 ```
 
-You can also an imported TaskCollection into your own:
+You can also include an imported TaskCollection into your own:
 
 ```python
 from poethepoet_tasks import TaskCollection, tasks
