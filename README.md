@@ -31,7 +31,7 @@ include_script = "poethepoet_tasks.tasks:tasks(exclude_tags=['black'])"
 As another example you could include only the test task like so:
 
 ```toml
-include_script = "poethepoet_tasks.tasks:tasks(exclude_tags=['test-task'])"
+include_script = "poethepoet_tasks.tasks:tasks(include_tags=['test-task'])"
 ```
 
 #### Configuring tasks
