@@ -1,6 +1,6 @@
 [project]
 name = "poethepoet-tasks"
-version = "0.1.0"
+version = "0.2.0"
 description = "A tasks package with common project tasks for Poe the Poet."
 authors = [{ name = "Nat Noordanus", email = "n@noordan.us" }]
 readme = "README.md"
