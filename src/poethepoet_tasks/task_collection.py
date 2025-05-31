@@ -146,7 +146,7 @@ class TaskCollection:
         :param func: The function to decorate
         :param task_name:
             The name of the task. if not set then the function name is used
-            (transformed to kabab-case).
+            (transformed to kebab-case).
         :param help:
             Documentation to display for this task.
             If not set then the function docstring is used.
