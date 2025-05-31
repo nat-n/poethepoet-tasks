@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 from functools import partial
-from typing import TYPE_CHECKING, Callable, get_args, get_origin, get_type_hints
+from typing import TYPE_CHECKING, Any, Callable, get_args, get_origin, get_type_hints
 
 from .helpers.docstrings import parse_args_from_docstring
 from .helpers.inspection import arg_types as _arg_types
@@ -182,58 +182,15 @@ class TaskCollection:
             )
 
             for param in params.values():
-                arg = {"name": param.name, "positional": False}
-
-                if param.name in args_help:
-                    arg["help"] = args_help[param.name]
-                if param.kind == param.POSITIONAL_ONLY:
-                    arg["positional"] = True
-                elif param.kind == param.POSITIONAL_OR_KEYWORD:
-                    if has_positional:
-                        arg["positional"] = True
-                    else:
-                        arg["options"] = ["--" + param.name.replace("_", "-")]
-                elif param.kind == param.VAR_POSITIONAL:
-                    arg["positional"] = True
-                    arg["multiple"] = True
-                elif param.kind == param.VAR_KEYWORD:
-                    # Ignore **kwargs
-                    continue
+                arg = _ArgDef(name=param.name)
+                if arg.configure(param, has_positional):
+                    arg.add_help(args_help)
+                    if (annotation := type_annotations[param.name]) != param.empty:
+                        arg.infer_type(annotation)
                 else:
-                    arg["options"] = ["--" + param.name.replace("_", "-")]
+                    continue
 
-                if param.annotation != param.empty:
-                    annotation = type_annotations[param.name]
-                    if is_union(annotation):
-                        annotation_args = get_args(annotation)
-                        annotation = next(
-                            (anno for anno in annotation_args if anno), None
-                        )
-                        is_nullable = type(None) in annotation_args
-                    else:
-                        if not arg["positional"] and get_origin(annotation) is list:
-                            if annotation_args := get_args(annotation):
-                                annotation = annotation_args[0]
-                            else:
-                                annotation = str
-                            arg["multiple"] = True
-                        is_nullable = False
-
-                    if annotation in _arg_types:
-                        arg["type"] = _arg_types[annotation]
-                    else:
-                        raise ValueError(
-                            "Unsupported argument type for argument "
-                            f"{param.name}: {annotation}"
-                        )
-
-                    if param.default == param.empty and not is_nullable:
-                        arg["required"] = True
-
-                if param.default != param.empty:
-                    arg["default"] = param.default
-
-                args.append(arg)
+                args.append(arg.config_dict())
             task_config["args"] = args
 
         self.add(
@@ -254,6 +211,101 @@ class _TaskConfig:
         self.name = name
         self.options = options
         self.tags = tags
+
+
+class _ArgDef:
+    name: str
+    help: str = ""
+    type: str = "string"
+    required: bool = True
+    positional: bool = False
+    multiple: bool = False
+    default: Any = None
+    options: list[str] | None = None
+
+    def __init__(self, name: str):
+        self.name = name
+
+    def configure(self, param: inspect.Parameter, has_positional: bool) -> bool:
+        """
+        Configure the argument definition based on the parameter kind.
+        :param param: The inspect.Parameter to configure from
+        :param has_positional:
+            Whether there are any positional arguments in the function
+        :return: True if the argument is legit, False if it should be ignored
+        """
+        if param.kind == param.POSITIONAL_ONLY:
+            self.positional = True
+        elif param.kind == param.POSITIONAL_OR_KEYWORD:
+            if has_positional:
+                self.positional = True
+            else:
+                self.options = ["--" + param.name.replace("_", "-")]
+        elif param.kind == param.VAR_POSITIONAL:
+            self.positional = True
+            self.multiple = True
+        elif param.kind == param.VAR_KEYWORD:
+            # Ignore **kwargs
+            return False
+        else:
+            self.options = ["--" + param.name.replace("_", "-")]
+
+        if param.default != param.empty:
+            self.default = param.default
+            # Having a default value implies argument is not required
+            self.required = False
+
+        return True
+
+    def add_help(self, args_help: dict[str, str]):
+        if self.name in args_help:
+            self.help = args_help[self.name]
+
+    def infer_type(self, annotation: Any):
+        if is_union(annotation):
+            annotation_args = get_args(annotation)
+            if type(None) in annotation_args:
+                annotation_args = tuple(
+                    anno for anno in annotation_args if anno is not type(None)
+                )
+
+            # Take the first non-nullable type from the union as the arg type
+            annotation = next((anno for anno in annotation_args if anno), None)
+
+        if not self.positional and get_origin(annotation) is list:
+            if annotation_args := get_args(annotation):
+                annotation = annotation_args[0]
+            else:
+                # Default to str if no type is specified for list items
+                annotation = str
+            self.multiple = True
+
+        if annotation in _arg_types:
+            self.type = _arg_types[annotation]
+        else:
+            raise ValueError(
+                "Unsupported argument type for argument " f"{self.name}: {annotation}"
+            )
+
+    def config_dict(self) -> dict:
+        """
+        Convert the argument definition to a dictionary suitable for JSON serialization.
+        :return: A dictionary representation of the argument definition
+        """
+        result = {
+            "name": self.name,
+            "type": self.type,
+            "required": self.required,
+            "positional": self.positional,
+            "multiple": self.multiple,
+        }
+        if self.help:
+            result["help"] = self.help
+        if self.default is not None:
+            result["default"] = self.default
+        if self.options:
+            result["options"] = self.options
+        return result
 
 
 __all__ = ["TaskCollection"]
