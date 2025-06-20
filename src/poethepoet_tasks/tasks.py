@@ -18,6 +18,24 @@ tasks.add(
             }
         ],
     },
+    tags=["ruff", "black", "test"],
+)
+
+tasks.add(
+    task_name="format",
+    task_config={
+        "sequence": ["format-ruff $files", "format-black $files"],
+        "help": "Run ruff fixer on code base",
+        "args": [
+            {
+                "name": "files",
+                "positional": True,
+                "multiple": True,
+                "help": "The files to format",
+                "default": "src",
+            }
+        ],
+    },
     tags=["ruff", "black"],
 )
 
@@ -40,6 +58,28 @@ tasks.add(
             }
         ],
     },
+    tags=["ruff", "test"],
+)
+
+tasks.add(
+    task_name="format",
+    task_config={
+        "cmd": (
+            'ruff check --config="${RUFF_CONFIG:-'
+            + str(get_path("ruff.toml"))
+            + '}" --fix-only $files'
+        ),
+        "help": "Run ruff fixer on the code base",
+        "args": [
+            {
+                "name": "files",
+                "positional": True,
+                "multiple": True,
+                "help": "The files to format",
+                "default": "src",
+            }
+        ],
+    },
     tags=["ruff"],
 )
 
@@ -55,6 +95,24 @@ tasks.add(
                 "multiple": True,
                 "help": "The files to format",
                 "default": "src tests",
+            }
+        ],
+    },
+    tags=["black", "test"],
+)
+
+tasks.add(
+    task_name="format",
+    task_config={
+        "cmd": "black $files",
+        "help": "Run black on the code base",
+        "args": [
+            {
+                "name": "files",
+                "positional": True,
+                "multiple": True,
+                "help": "The files to format",
+                "default": "src",
             }
         ],
     },
@@ -80,6 +138,28 @@ tasks.add(
             }
         ],
     },
+    tags=["black", "ruff", "test"],
+)
+
+tasks.add(
+    task_name="format-ruff",
+    task_config={
+        "cmd": (
+            'ruff check --config="${RUFF_CONFIG:-'
+            + str(get_path("ruff.toml"))
+            + '}" --fix-only $files'
+        ),
+        "help": "Run ruff fixer on the code base",
+        "args": [
+            {
+                "name": "files",
+                "positional": True,
+                "multiple": True,
+                "help": "The files to format",
+                "default": "src",
+            }
+        ],
+    },
     tags=["black", "ruff"],
 )
 
@@ -95,6 +175,24 @@ tasks.add(
                 "multiple": True,
                 "help": "The files to format",
                 "default": "src tests",
+            }
+        ],
+    },
+    tags=["black", "ruff", "test"],
+)
+
+tasks.add(
+    task_name="format-black",
+    task_config={
+        "cmd": "black $files",
+        "help": "Run black on the code base",
+        "args": [
+            {
+                "name": "files",
+                "positional": True,
+                "multiple": True,
+                "help": "The files to format",
+                "default": "src",
             }
         ],
     },
@@ -163,7 +261,7 @@ tasks.add(
         "help": "Run tests",
         "cmd": "pytest",
     },
-    tags=["pytest"],
+    tags=["pytest", "test"],
 )
 
 tasks.add(
@@ -172,7 +270,7 @@ tasks.add(
         "help": "Run all checks on the code base",
         "sequence": ["lint", "style", "types", "test"],
     },
-    tags=["types", "test", "pytest", "lint", "ruff", "black"],
+    tags=["types", "test", "lint", "ruff", "black"],
 )
 
 tasks.add(
@@ -181,7 +279,7 @@ tasks.add(
         "help": "Run all checks on the code base",
         "sequence": ["lint", "types", "test"],
     },
-    tags=["types", "test", "pytest", "lint", "ruff"],
+    tags=["types", "test", "lint", "ruff"],
 )
 
 tasks.add(
@@ -190,7 +288,7 @@ tasks.add(
         "help": "Run all checks on the code base",
         "sequence": ["types", "test"],
     },
-    tags=["types", "test", "pytest"],
+    tags=["types", "test"],
 )
 
 tasks.add(
