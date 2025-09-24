@@ -1,3 +1,4 @@
+import inspect
 import re
 
 
@@ -105,11 +106,4 @@ def _unindent_docstring(docstring: str) -> str:
     :param docstring: The docstring to unindent
     :return: The unindented docstring
     """
-    if not docstring.strip():
-        return ""
-    common_indent = min(
-        next((index for index, char in enumerate(line) if not char.isspace()), 0)
-        for line in docstring.splitlines()
-        if line.strip()
-    )
-    return "\n".join(line[common_indent:] for line in docstring.splitlines())
+    return inspect.cleandoc(docstring) + "\n"

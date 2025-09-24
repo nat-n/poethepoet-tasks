@@ -71,6 +71,20 @@ def test_parse_google_docstring_args():
     assert parse_google_docstring_args(docstring) == expected
 
 
+def test_parse_google_docstring_starting_on_first_line():
+    docstring = """Parse the arguments when docstring starts on the first line.
+
+    Args:
+        param1: Description for param1
+        param2: Description for param2
+    """
+    expected = {
+        "param1": "Description for param1",
+        "param2": "Description for param2",
+    }
+    assert parse_google_docstring_args(docstring) == expected
+
+
 def test_parse_google_docstring_single_arg():
     docstring = """
     Args:
