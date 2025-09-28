@@ -1,6 +1,6 @@
-from __future__ import annotations
+# ruff: noqa: E501
 
-from typing import Optional
+from __future__ import annotations
 
 from poethepoet_tasks.task_collection import TaskCollection
 
@@ -9,7 +9,7 @@ def test_optional_single_value_script_args(assert_tasks_match):
     tasks = TaskCollection()
 
     @tasks.script()
-    def my_task(value1: Optional[str] = None, value2: str = "lol"):
+    def my_task(value1: str | None = None, value2: str = "lol"):
         print(f"Values: {value1}, {value2}")
 
     assert_tasks_match(
@@ -85,7 +85,7 @@ def test_nullable_required_script_arg(assert_tasks_match):
     tasks = TaskCollection()
 
     @tasks.script()
-    def my_task(value: Optional[str]):
+    def my_task(value: str | None):
         print(f"Value: {value}")
 
     assert_tasks_match(
@@ -119,12 +119,12 @@ def test_arg_types_with_help(assert_tasks_match):
 
     @tasks.script(tags=["hello"], task_args=True)
     def hello(
-        huh: Optional[str] = None,
+        huh: str | None = None,
         *,
         foo: int = 1,
         bar_bar: float = 1.0,
         baz: bool = True,
-        qux: str = True,  # type: ignore
+        qux: str = True,  # type: ignore[assignment]
     ):
         """
         Greet all the things
