@@ -7,7 +7,7 @@ readme = "README.md"
 license = "MIT"
 keywords = ["automation", "tasks", "task-runner", "poetry", "poe", "poethepoet"]
 classifiers = ["Topic :: Software Development :: Build Tools"]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
   "black>=25.1.0",
   "mypy>=1.16.0",
