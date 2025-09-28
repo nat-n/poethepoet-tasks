@@ -5,9 +5,8 @@ Poe the Poet Tasks
 
 Compatiable with Poe the Poet version >= 0.34.0
 
-## Usage
 
-### Using tasks
+## Using tasks from this package
 
 This library defines an opinionated collection of tasks that you can add to your project by adding a dev dependency on `poethepoet-tasks`, and including the following line in your _pyproject.toml_.
 
@@ -18,7 +17,7 @@ include_script = "poethepoet_tasks:tasks"
 
 Note that available tasks may change from one release to the next so it is recommended to depend on a specific version so that the tasks in your project don't change unexpectedly.
 
-#### Selecting tasks using tags
+### Selecting tasks using tags
 
 By default all available tasks are loaded, but you can also optionally specify a list of tags to include (in which case only matching tags are included), as well as a list of tags to exclude. Exclusion has higher logical precedence than inclusion.
 
@@ -31,10 +30,10 @@ include_script = "poethepoet_tasks.tasks:tasks(exclude_tags=['black'])"
 As another example you could include only the test task like so:
 
 ```toml
-include_script = "poethepoet_tasks.tasks:tasks(include_tags=['test-task'])"
+include_script = "poethepoet_tasks.tasks:tasks(include_tags=['task-test'])"
 ```
 
-#### Configuring tasks
+### Configuring tasks
 
 Tasks that use [ruff](https://docs.astral.sh/ruff/) come with an opinionated config file that'll work well for most projects. However if you want to provide your own config you can do so by setting `$RUFF_CONFIG` like so:
 
@@ -46,7 +45,7 @@ include_script = "poethepoet_tasks:tasks"
 
 See the section below on Mixing task collections for an alternative approach of customizing tasks from a tasks package like this one.
 
-### Defining your own tasks
+## Defining your own tasks
 
 The TaskCollection class provides a powerful abstraction for declaring poe tasks in code, to create task packages for reuse across multiple projects. It also provides a way to unify the declaration and definition of script tasks.
 
@@ -85,7 +84,7 @@ All tasks are tagged with `f"task-{task_name}"` by default.
 
 See the tasks package in this repo for a [real world example](https://github.com/nat-n/poethepoet-tasks/blob/main/src/poethepoet_tasks/tasks.py).
 
-## Configuring environment variables for tasks
+### Configuring environment variables for tasks
 
 Poe the Poet's `include_script` option also supports including environment variables, which can be set directly on a TaskCollection in the constructor or properties.
 
@@ -100,7 +99,7 @@ tasks.envfile.append(".secrets")
 
 See the [Poet the Poet docs](https://poethepoet.natn.io/global_options.html#global-environment-variables) for more details.
 
-## Inline script tasks
+### Inline script tasks
 
 The TaskCollection object also provides a decorator to be applied directly to python functions to declare them as script tasks.
 
@@ -139,7 +138,44 @@ The `script` decorator registers a new script task in the TaskCollection. It acc
 - **options** `dict`: Any [other options](https://poethepoet.natn.io/tasks/task_types/script.html#available-task-options) to provide as config for the script task.
 - **tags** `Collection[str]`: A collection of tags to associate with this item in the task collection.
 
-## Mixing task collections
+### Lazily resolve tasks based on tags
+
+You can also define tasks via a generator function that lazily determines which tasks to configure based on the configured tags to include or exclude. This is a more powerful alternative static tagging of task definitions.
+
+For example the following example defines a sequence task excluding any tasks that were excluded by name.
+
+```python
+@tasks.generate
+def generate_check_task(requested_tags: TagEvaluator):
+    """
+    Generates `check` task as a sequence including `lint`, `style`, `types`, and `test`
+    tasks in that order, excluding any tasks that are explicitly excluded a
+    `task-<taskname>` tag.
+
+    If all referenced tasks are excluded then no check task is generated.
+    """
+
+    task_name = "check"
+    doc = "Run all checks on the code base"
+    sequence = []
+    if not requested_tags.excluded("task-lint"):
+        sequence.append("lint")
+    if not requested_tags.excluded("task-style"):
+        sequence.append("style")
+    if not requested_tags.excluded("task-types"):
+        sequence.append("types")
+    if not requested_tags.excluded("task-test"):
+        sequence.append("test")
+
+    if sequence:
+        yield task_name, {"help": doc, "sequence": sequence}
+```
+
+A single generator may yield zero or more tasks. Generator derived tasks have lower precedence than statically configured tasks, and are automatically dropped if referenced by an `exclude_task` like `task-<taskname>`.
+
+Check the available methods on of the [TagEvaluator here](https://github.com/nat-n/poethepoet-tasks/blob/main/src/poethepoet_tasks/tags.py), and see [here for a more complex example]((https://github.com/nat-n/poethepoet-tasks/blob/main/src/poethepoet_tasks/tasks.py)).
+
+### Mixing task collections
 
 You may wish to extend or modify a third party TaskCollection (such as this one) when creating your own.
 

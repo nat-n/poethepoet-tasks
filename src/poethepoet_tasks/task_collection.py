@@ -1,15 +1,19 @@
 from __future__ import annotations
 
 import inspect
+from collections.abc import Collection, Generator
 from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, get_args, get_origin, get_type_hints
 
 from .helpers.docstrings import parse_args_from_docstring
 from .helpers.inspection import arg_types as _arg_types
 from .helpers.inspection import is_union
+from .tags import TagEvaluator
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Iterator
+    from collections.abc import Iterator
+
+TaskGenerator = Callable[[TagEvaluator], Generator[tuple[str, dict], None, None]]
 
 
 class TaskCollection:
@@ -30,6 +34,7 @@ class TaskCollection:
         self._env: dict[str, str] = env or {}
         self._envfile: list[str] = envfile or []
         self._tasks: dict[str, list[_TaskConfig]] = {}
+        self._task_generators: list[TaskGenerator] = []
         self.config_path = inspect.currentframe().f_back.f_globals.get("__file__")  # type: ignore[union-attr]
 
     @property
@@ -54,6 +59,8 @@ class TaskCollection:
             _TaskConfig(task_name, task_config, (*tags, f"task-{task_name}"))
         )
 
+        return self
+
     def remove(self, task_name: str, tags: Collection[str] = tuple()):
         """
         Unregister all task configurations with the given name.
@@ -73,6 +80,8 @@ class TaskCollection:
                     if not any(tag in task.tags for tag in tags)
                 ]
 
+        return self
+
     def include(self, other: TaskCollection):
         """
         Merge another TaskCollection into this one.
@@ -87,8 +96,31 @@ class TaskCollection:
             if envfile not in self.envfile:
                 self.envfile.append(envfile)
 
-        for task in other:
-            self.add(task.name, task.options, task.tags)
+        for task_variants in other._tasks.values():
+            for task in task_variants:
+                self.add(task.name, task.options, task.tags)
+
+        for source in other._task_generators:
+            self.generate(source)
+
+        return self
+
+    def generate(self, source: TaskGenerator):
+        """
+        Register a task generator to lazily configure task configurations based on tags.
+
+        Note: in case of a naming conflict generated tasks have lower precedence than
+              tasks configured with add or the script decorator.
+
+        This method may be used as a decorator.
+
+        :param source:
+            A generator function that accepts include_tags and exclude_tags and yields
+            zero or more task configurations.
+        """
+        self._task_generators.append(source)
+
+        return self
 
     def __iter__(self) -> Iterator[_TaskConfig]:
         for task_variants in self._tasks.values():
@@ -117,15 +149,23 @@ class TaskCollection:
         if self.config_path:
             result["config_path"] = self.config_path
 
+        requested_tags = TagEvaluator(include_tags, exclude_tags)
+
         tasks: dict[str, dict] = {}
         for task_variants in self._tasks.values():
             for task in task_variants:
-                if include_tags and not any(tag in task.tags for tag in include_tags):
+                if requested_tags.evaluate(*task.tags):
+                    tasks[task.name] = task.options
+                    break
+
+        for generator in self._task_generators:
+            for task_name, task_config in generator(requested_tags):
+                if task_name in tasks or requested_tags.excluded(f"task-{task_name}"):
+                    # Give higher precedence to statically defined task config
+                    # and ignore tasks that are explicitly excluded
                     continue
-                if exclude_tags and any(tag in task.tags for tag in exclude_tags):
-                    continue
-                tasks[task.name] = task.options
-                break
+                tasks[task_name] = task_config
+
         result["tasks"] = tasks
 
         return result
@@ -207,7 +247,7 @@ class _TaskConfig:
     options: dict
     tags: Collection[str]
 
-    def __init__(self, name: str, options: dict, tags: Collection[str]):
+    def __init__(self, name: str, options: dict, tags: Collection[str] = tuple()):
         self.name = name
         self.options = options
         self.tags = tags
@@ -290,6 +330,7 @@ class _ArgDef:
     def config_dict(self) -> dict:
         """
         Convert the argument definition to a dictionary suitable for JSON serialization.
+
         :return: A dictionary representation of the argument definition
         """
         result = {
