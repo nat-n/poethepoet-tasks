@@ -5,9 +5,10 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+from .tags import TagEvaluator
 from .task_collection import TaskCollection
 
-__all__ = ["TaskCollection"]
+__all__ = ["TaskCollection", "TagEvaluator"]
 
 
 def tasks(include_tags: Sequence[str] = tuple(), exclude_tags: Sequence[str] = tuple()):
